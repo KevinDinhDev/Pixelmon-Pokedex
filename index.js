@@ -221,7 +221,12 @@ async function initialize() {
             if (pokedexData.pokemonInfo && pokedexData.pokemonInfo.length > 0) {
                 pokemonList += `Uncaught Pokemon Pages ${pokedexData.currentPage}/${pokedexData.totalPages}:\n`;
                 pokedexData.pokemonInfo.forEach(pokemon => {
-                    pokemonList += `ID: ${pokemon.pokemonid}, Name: ${pokemon.name}, Evolve: ${pokemon.evolve}\n`;
+                    pokemonList += `ID: ${pokemon.pokemonid}, Name: ${pokemon.name}`;
+                    if (pokemon.evolve) {
+                        pokemonList += `, Evolve: ${pokemon.evolve}\n`;
+                    } else {
+                        pokemonList += '\n';
+                    }
                 });
             }
         
