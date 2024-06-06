@@ -68,7 +68,7 @@ async function initialize() {
             }
         });
 
-        async function getPokedexData(playerName, page = 1, pageSize = 10) {
+        async function getPokedexData(playerName, page = 1, pageSize = 15) {
             const testDataDir = path.join(__dirname, 'test-data');
             const files = await fs.readdir(testDataDir);
 
@@ -163,7 +163,7 @@ async function initialize() {
 
         async function displayPokedex(message, playerName, pokedexData) {
             const embed = createEmbed(pokedexData);
-
+        
             const row = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
@@ -175,41 +175,56 @@ async function initialize() {
                         .setLabel('▶️')
                         .setStyle(ButtonStyle.Primary),
                 );
-
+        
             const sentMessage = await message.channel.send({ embeds: [embed], components: [row] });
-
+        
             const filter = (interaction) => {
                 return interaction.isButton() && interaction.user.id === message.author.id;
             };
-
+        
             const collector = sentMessage.createMessageComponentCollector({ filter, time: 60000 });
-
+        
             collector.on('collect', async (interaction) => {
-                if (interaction.customId === 'previous_page' && pokedexData.currentPage > 1) {
-                    const prevPageData = await getPokedexData(playerName, pokedexData.currentPage - 1);
-                    await interaction.update({ embeds: [createEmbed(prevPageData)], components: [row] });
-                } else if (interaction.customId === 'next_page' && pokedexData.currentPage < pokedexData.totalPages) {
-                    const nextPageData = await getPokedexData(playerName, pokedexData.currentPage + 1);
-                    await interaction.update({ embeds: [createEmbed(nextPageData)], components: [row] });
+                try {
+                    if (interaction.customId === 'previous_page') {
+                        if (pokedexData.currentPage > 1) {
+                            const prevPageData = await getPokedexData(playerName, pokedexData.currentPage - 1);
+                            await interaction.update({ embeds: [createEmbed(prevPageData)], components: [row] });
+                            pokedexData.currentPage -= 1; // Update current page number
+                        } else {
+                            interaction.reply({ content: 'You are already on the first page.', ephemeral: true });
+                        }
+                    } else if (interaction.customId === 'next_page') {
+                        if (pokedexData.currentPage < pokedexData.totalPages) {
+                            const nextPageData = await getPokedexData(playerName, pokedexData.currentPage + 1);
+                            await interaction.update({ embeds: [createEmbed(nextPageData)], components: [row] });
+                            pokedexData.currentPage += 1; // Update current page number
+                        } else {
+                            interaction.reply({ content: 'You are already on the last page.', ephemeral: true });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error handling interaction:', error);
+                    interaction.reply({ content: 'An error occurred while processing your request.', ephemeral: true });
                 }
             });
-
+        
             collector.on('end', () => {
                 sentMessage.edit({ components: [] });
             });
         }
-
+        
         function createEmbed(pokedexData) {
             let response = `${pokedexData.playerName} has caught ${pokedexData.caught} Pokemon and has ${pokedexData.uncaught} Pokemon left.\n`;
             let pokemonList = '';
-
+        
             if (pokedexData.pokemonInfo && pokedexData.pokemonInfo.length > 0) {
-                pokemonList += `Page ${pokedexData.currentPage}/${pokedexData.totalPages}:\n`;
+                pokemonList += `Uncaught Pokemon Pages ${pokedexData.currentPage}/${pokedexData.totalPages}:\n`;
                 pokedexData.pokemonInfo.forEach(pokemon => {
                     pokemonList += `ID: ${pokemon.pokemonid}, Name: ${pokemon.name}, Evolve: ${pokemon.evolve}\n`;
                 });
             }
-
+        
             return {
                 title: 'Pokedex',
                 description: response + pokemonList,
