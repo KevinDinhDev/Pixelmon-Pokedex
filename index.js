@@ -69,7 +69,7 @@ async function initialize() {
         });
 
         async function getPokedexData(playerName, page = 1, pageSize = 15) {
-            const testDataDir = path.join(__dirname, 'test-data');
+            const testDataDir = path.join(__dirname, '..', 'world', 'data', 'pokemon');
             const files = await fs.readdir(testDataDir);
 
             const caughtPokemonSet = new Set();
@@ -141,25 +141,32 @@ async function initialize() {
 
         async function fetchUncaughtPokemonInfo(caughtPokemonIds) {
             try {
-                const placeholders = caughtPokemonIds.map(() => '?').join(',');
-                const sql = `SELECT pokemonid, name, evolve FROM pokedex WHERE pokemonid NOT IN (${placeholders}) ORDER BY pokemonid`;
-
+                let sql = `SELECT pokemonid, name, evolve FROM pokedex`;
+        
+                if (caughtPokemonIds.length > 0) {
+                    const placeholders = caughtPokemonIds.map(() => '?').join(',');
+                    sql += ` WHERE pokemonid NOT IN (${placeholders})`;
+                }
+        
+                sql += ` ORDER BY pokemonid`;
+        
                 console.log('SQL Query:', sql);
                 console.log('Caught Pokemon IDs:', caughtPokemonIds);
-
+        
                 const [rows, fields] = await connection.query(sql, caughtPokemonIds);
-
+        
                 if (!rows || !Array.isArray(rows)) {
                     console.error('No rows returned from the database query.');
                     return null;
                 }
-
+        
                 return rows;
             } catch (error) {
                 console.error('Error fetching uncaught Pokemon info:', error);
                 return null;
             }
         }
+        
 
         async function displayPokedex(message, playerName, pokedexData) {
             const embed = createEmbed(pokedexData);
