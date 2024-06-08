@@ -194,21 +194,21 @@ async function initialize() {
             collector.on('collect', async (interaction) => {
                 try {
                     if (interaction.customId === 'previous_page') {
-                        if (pokedexData.currentPage > 1) {
-                            const prevPageData = await getPokedexData(playerName, pokedexData.currentPage - 1);
-                            await interaction.update({ embeds: [createEmbed(prevPageData)], components: [row] });
-                            pokedexData.currentPage -= 1; // Update current page number
-                        } else {
-                            interaction.reply({ content: 'You are already on the first page.', ephemeral: true });
+                        let targetPage = pokedexData.currentPage - 1;
+                        if (targetPage < 1) {
+                            targetPage = pokedexData.totalPages;
                         }
+                        const prevPageData = await getPokedexData(playerName, targetPage);
+                        await interaction.update({ embeds: [createEmbed(prevPageData)], components: [row] });
+                        pokedexData.currentPage = targetPage;
                     } else if (interaction.customId === 'next_page') {
-                        if (pokedexData.currentPage < pokedexData.totalPages) {
-                            const nextPageData = await getPokedexData(playerName, pokedexData.currentPage + 1);
-                            await interaction.update({ embeds: [createEmbed(nextPageData)], components: [row] });
-                            pokedexData.currentPage += 1; // Update current page number
-                        } else {
-                            interaction.reply({ content: 'You are already on the last page.', ephemeral: true });
+                        let targetPage = pokedexData.currentPage + 1;
+                        if (targetPage > pokedexData.totalPages) {
+                            targetPage = 1;
                         }
+                        const nextPageData = await getPokedexData(playerName, targetPage);
+                        await interaction.update({ embeds: [createEmbed(nextPageData)], components: [row] });
+                        pokedexData.currentPage = targetPage;
                     }
                 } catch (error) {
                     console.error('Error handling interaction:', error);
